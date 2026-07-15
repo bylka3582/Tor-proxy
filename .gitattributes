@@ -1,0 +1,23 @@
+# Normalize line endings; let Git decide per-file by default.
+* text=auto
+
+# Windows-tooling files stay CRLF.
+*.sln       text eol=crlf
+*.csproj    text eol=crlf
+*.props     text eol=crlf
+*.targets   text eol=crlf
+*.ps1       text eol=crlf
+*.manifest  text eol=crlf
+
+# Source stays LF.
+*.cs    text eol=lf
+*.xaml  text eol=lf
+*.md    text eol=lf
+*.yml   text eol=lf
+
+# Binary assets — never touch.
+*.ico  binary
+*.png  binary
+*.exe  binary
+*.dll  binary
+*.sys  binary

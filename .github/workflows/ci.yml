@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # The Tor binaries are not committed, so the app compiles here WITHOUT the
+      # embedded resources (a compile + test gate only). Release builds are made
+      # locally after scripts/fetch-tor.ps1 has staged the binaries.
+      - name: Build
+        run: dotnet build platforms/windows/Tor-proxy.sln -c Release
+
+      - name: Test
+        run: dotnet test platforms/windows/tests/Tor.Tests/DpiBypass.Tor.Tests.csproj -c Release --no-build

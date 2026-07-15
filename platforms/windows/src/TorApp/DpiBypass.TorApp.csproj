@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- System.Windows.Forms.NotifyIcon gives a tray icon with no third-party dep. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>Tor-proxy</AssemblyName>
+    <RootNamespace>TorProxy</RootNamespace>
+    <!-- Tor needs NO administrator rights, so run as the invoking user: no UAC
+         prompt, much friendlier than the DPI-bypass app. -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>assets\app.ico</ApplicationIcon>
+    <Product>Tor-proxy</Product>
+    <AssemblyTitle>Tor-proxy</AssemblyTitle>
+    <Company>bylka</Company>
+    <Authors>bylka</Authors>
+    <Copyright>© bylka</Copyright>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Reuse the already-tested, engine-independent Tor library. -->
+    <ProjectReference Include="..\Tor\DpiBypass.Tor.csproj" />
+  </ItemGroup>
+
+  <!-- Ship as ONE file: the Tor binaries are embedded and extracted to the
+       user's app data on first run. Requires third_party\tor to be populated
+       (scripts\fetch-tor.ps1). LogicalName gives each a stable resource name. -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\..\third_party\tor\tor.exe')">
+    <EmbeddedResource Include="..\..\third_party\tor\tor.exe" LogicalName="tor.exe" />
+    <EmbeddedResource Include="..\..\third_party\tor\pluggable_transports\lyrebird.exe" LogicalName="lyrebird.exe" />
+    <EmbeddedResource Include="..\..\third_party\tor\hashes.txt" LogicalName="hashes.txt" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,302 @@
+<Window x:Class="TorProxy.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Tor-proxy" Height="760" Width="600" MinWidth="520" MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Bg}" Foreground="{StaticResource Text}"
+        FontFamily="Segoe UI" FontSize="13">
+
+    <Window.Resources>
+        <Style x:Key="ToggleBtn" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource Danger}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="Step" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Foreground" Value="{StaticResource Text}" />
+            <Setter Property="LineHeight" Value="19" />
+        </Style>
+        <Style x:Key="SubHead" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Muted}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+    </Window.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0">
+        <StackPanel Margin="24,20,24,24" MaxWidth="640">
+
+            <!-- Header -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="🧅  Tor-proxy" FontSize="24" FontWeight="Bold" />
+                <TextBlock Grid.Column="1" Text="by bylka" FontSize="12" FontStyle="Italic"
+                           Foreground="{StaticResource Muted}" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+            </Grid>
+            <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{StaticResource Muted}"
+                       Text="Открывает доступ к заблокированным сайтам через сеть Tor (мост Snowflake). Не нужен VPN и права администратора. Весь трафик идёт локально через этот компьютер." />
+
+            <!-- Status card -->
+            <Border Background="{StaticResource Card}" CornerRadius="10" Padding="16" Margin="0,18,0,0"
+                    BorderBrush="{StaticResource CardBorder}" BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,10,0">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{StaticResource DotGrey}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding StatusLevel}" Value="1">
+                                            <Setter Property="Fill" Value="{StaticResource DotWork}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusLevel}" Value="2">
+                                            <Setter Property="Fill" Value="{StaticResource DotReady}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusLevel}" Value="3">
+                                            <Setter Property="Fill" Value="{StaticResource DotError}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock Text="{Binding StatusText}" FontSize="18" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding DetailText}" TextWrapping="Wrap" Margin="0,8,0,0"
+                               Foreground="{StaticResource Muted}" LineHeight="18" />
+
+                    <ProgressBar Height="6" Margin="0,14,0,0" Minimum="0" Maximum="100"
+                                 Value="{Binding Percent, Mode=OneWay}" BorderThickness="0"
+                                 Background="{StaticResource CardBorder}" Foreground="{StaticResource Accent}" />
+
+                    <TextBlock Text="{Binding UptimeText}" Foreground="{StaticResource Muted}" FontSize="12"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding ShowUptime, Converter={StaticResource BoolVis}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Big action button -->
+            <Button Content="{Binding ToggleLabel}" Command="{Binding ToggleCommand}"
+                    Style="{StaticResource ToggleBtn}" Margin="0,16,0,0"
+                    ToolTip="Запустить или остановить прокси. После запуска подождите 1–3 минуты, пока статус не станет «Готово»." />
+
+            <!-- Endpoint card -->
+            <Border Background="{StaticResource Card}" CornerRadius="10" Padding="16" Margin="0,16,0,0"
+                    BorderBrush="{StaticResource CardBorder}" BorderThickness="1"
+                    ToolTip="Укажите этот адрес в настройках SOCKS5-прокси браузера и включите проксирование DNS (socks5h), чтобы не было утечек.">
+                <StackPanel>
+                    <TextBlock Text="Адрес прокси (SOCKS5)" Style="{StaticResource SubHead}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Text="{Binding EndpointText, Mode=OneWay}" IsReadOnly="True"
+                                 FontFamily="Consolas" FontSize="16" VerticalContentAlignment="Center"
+                                 Background="#141416" Foreground="{StaticResource Text}"
+                                 BorderBrush="{StaticResource CardBorder}" BorderThickness="1" Padding="10,6" />
+                        <Button Grid.Column="1" Content="Копировать" Command="{Binding CopyEndpointCommand}"
+                                Style="{StaticResource SecondaryButton}" Height="36" Margin="8,0,0,0"
+                                ToolTip="Скопировать адрес в буфер обмена." />
+                    </Grid>
+
+                    <Button Content="Проверить, что работает через Tor" Command="{Binding CheckCommand}"
+                            Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,12,0,0"
+                            ToolTip="Откроет check.torproject.org через прокси и проверит, что трафик действительно идёт через сеть Tor. Доступно после статуса «Готово»." />
+                    <TextBlock Text="{Binding CheckResult}" Foreground="{StaticResource Muted}"
+                               TextWrapping="Wrap" Margin="0,8,0,0" LineHeight="17" />
+                </StackPanel>
+            </Border>
+
+            <!-- Instructions -->
+            <Expander Header="📖  Как пользоваться — пошаговая инструкция" IsExpanded="True"
+                      Margin="0,16,0,0" Foreground="{StaticResource Text}" FontWeight="SemiBold">
+                <Border Background="{StaticResource Card}" CornerRadius="10" Padding="16,14" Margin="0,8,0,0"
+                        BorderBrush="{StaticResource CardBorder}" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="1. " /><Run Text="Если у вас включён VPN — выключите его. Прокси подключается к сети Tor напрямую." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="2. " /><Run Text="Нажмите «Запустить» и подождите, пока статус не станет «Готово» (обычно 1–3 минуты). Остановка на ~10% с надписью «Поиск моста» — это нормально, идёт подбор рабочего узла Snowflake. Просто ждите." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="3. " /><Run Text="Когда появится «Готово», нажмите «Копировать» — адрес 127.0.0.1:9150 попадёт в буфер обмена." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="4. " /><Run Text="Настройте браузер на этот SOCKS5-прокси:" />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}" Margin="18,0,0,10">
+                            <Run FontWeight="SemiBold" Text="• Firefox: " /><Run Text="Настройки → «Параметры сети» → Настроить → «Ручная настройка прокси» → узел SOCKS 127.0.0.1, порт 9150, вариант SOCKS 5, и обязательно включите «Проксировать DNS при использовании SOCKS 5»." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}" Margin="18,0,0,10">
+                            <Run FontWeight="SemiBold" Text="• Chrome / Edge: " /><Run Text="удобнее через расширение FoxyProxy: тип SOCKS5, адрес 127.0.0.1, порт 9150, включите «Proxy DNS». В FoxyProxy можно задать список сайтов — тогда через Tor пойдут только заблокированные, а остальное напрямую и на полной скорости." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="5. " /><Run Text="Приложения с поддержкой SOCKS5 указывайте на 127.0.0.1:9150. Для программ без такой поддержки используйте «проксификатор» (например, Proxifier)." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="6. " /><Run Text="Скорость Tor — примерно 1–5 Мбит/с. Этого достаточно для сайтов, форумов, мессенджеров и API, но мало для видео." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}" Margin="0,4,0,0">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="7. " /><Run Text="Не закрывайте окно, пока пользуетесь прокси. Чтобы остановить — нажмите «Остановить» или закройте окно." />
+                        </TextBlock>
+                        <Border Background="#141416" CornerRadius="8" Padding="12,10" Margin="0,6,0,0">
+                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Muted}" LineHeight="18"
+                                       Text="ℹ Трафик идёт через сеть Tor: провайдер не видит, какие сайты вы открываете, а сайт не видит ваш настоящий IP. Это не панацея для полной анонимности — но именно поэтому обходит блокировку по имени сайта." />
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Expander>
+
+            <!-- Telegram -->
+            <Expander Header="📨  Как настроить Telegram (пошагово)" IsExpanded="False" Margin="0,12,0,0"
+                      Foreground="{StaticResource Text}" FontWeight="SemiBold">
+                <Border Background="{StaticResource Card}" CornerRadius="10" Padding="16,14" Margin="0,8,0,0"
+                        BorderBrush="{StaticResource CardBorder}" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="1. " /><Run Text="Сначала в этой программе нажмите «Запустить» и дождитесь статуса «Готово»." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="2. " /><Run Text="Откройте Telegram Desktop на этом же компьютере (приложение для ПК, не на телефоне)." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="3. " /><Run Text="Нажмите на меню ☰ вверху слева, затем «Настройки» (Settings)." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="4. " /><Run Text="Откройте «Продвинутые настройки» (Advanced)." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="5. " /><Run Text="Найдите раздел «Тип соединения» (Connection type) и выберите «Использовать свой прокси» (Use custom proxy)." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="6. " /><Run Text="Нажмите «Добавить прокси» (Add proxy) и выберите тип «SOCKS5»." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="7. " /><Run Text="Введите: Сервер (Hostname) — 127.0.0.1, Порт (Port) — 9150. Поля «Логин» и «Пароль» оставьте пустыми." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="8. " /><Run Text="Нажмите «Сохранить» (Save) и убедитесь, что этот прокси выбран (отмечен точкой/галочкой)." />
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Step}" Margin="0,0,0,4">
+                            <Run FontWeight="Bold" Foreground="{StaticResource Accent}" Text="9. " /><Run Text="Telegram переподключится через Tor — внизу появится значок активного прокси. Готово." />
+                        </TextBlock>
+                        <Border Background="#141416" CornerRadius="8" Padding="12,10" Margin="0,6,0,0">
+                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Muted}" LineHeight="18"
+                                       Text="ℹ Прокси работает только на этом компьютере (адрес 127.0.0.1), поэтому настраивается Telegram Desktop именно на этом ПК; на телефоне так подключиться нельзя. Чтобы вернуть прямое подключение — в том же разделе выберите «Отключить прокси». Пока прокси включён, не закрывайте программу (можно свернуть её в трей)." />
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Expander>
+
+            <!-- Advanced -->
+            <Expander Header="⚙  Дополнительно" IsExpanded="False" Margin="0,12,0,0"
+                      Foreground="{StaticResource Text}" FontWeight="SemiBold">
+                <Border Background="{StaticResource Card}" CornerRadius="10" Padding="16,14" Margin="0,8,0,0"
+                        BorderBrush="{StaticResource CardBorder}" BorderThickness="1">
+                    <StackPanel>
+                        <CheckBox Content="Запускать вместе с Windows" IsChecked="{Binding AutoStartEnabled}"
+                                  Foreground="{StaticResource Text}"
+                                  ToolTip="Программа будет запускаться при входе в Windows (только для текущего пользователя, без прав администратора). Сам прокси при этом не включается — нажмите «Запустить»." />
+
+                        <TextBlock Text="Мосты" Style="{StaticResource SubHead}" Margin="0,16,0,6" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Muted}" LineHeight="18" Margin="0,0,0,8"
+                                   Text="Мосты Snowflake уже настроены — обычно менять ничего не нужно. Если подключение перестанет работать, добавьте свои мосты obfs4 (bridges.torproject.org или Telegram @GetBridgesBot)." />
+                        <Border Background="#141416" CornerRadius="8" BorderBrush="{StaticResource CardBorder}" BorderThickness="1">
+                            <ListBox ItemsSource="{Binding Bridges}" VirtualizingStackPanel.IsVirtualizing="False"
+                                     Height="110" Background="Transparent" BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="4,2" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding}" TextTrimming="CharacterEllipsis"
+                                                       FontFamily="Consolas" FontSize="11" VerticalAlignment="Center"
+                                                       Foreground="{StaticResource Muted}" ToolTip="{Binding}" />
+                                            <Button Grid.Column="1" Content="✕" Height="22" Padding="8,0" Margin="6,0,0,0"
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    Command="{Binding DataContext.RemoveBridgeCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}" ToolTip="Удалить этот мост" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Text="{Binding NewBridge, UpdateSourceTrigger=PropertyChanged}"
+                                     FontFamily="Consolas" FontSize="11" VerticalContentAlignment="Center"
+                                     Background="#141416" Foreground="{StaticResource Text}"
+                                     BorderBrush="{StaticResource CardBorder}" BorderThickness="1" Padding="8,5"
+                                     ToolTip="Вставьте строку моста (obfs4 … или snowflake …) и нажмите «Добавить»." />
+                            <Button Grid.Column="1" Content="Добавить" Command="{Binding AddBridgeCommand}"
+                                    Style="{StaticResource SecondaryButton}" Height="30" Margin="8,0,0,0" />
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button Content="Сохранить мосты" Command="{Binding SaveBridgesCommand}"
+                                    Style="{StaticResource SecondaryButton}"
+                                    ToolTip="Записать список в bridges.txt. После сохранения перезапустите прокси (Остановить → Запустить)." />
+                            <Button Content="Открыть папку с настройками" Click="OnOpenFolder" Margin="8,0,0,0"
+                                    Style="{StaticResource SecondaryButton}"
+                                    ToolTip="Открыть папку с bridges.txt, журналом и данными Tor." />
+                        </StackPanel>
+                        <TextBlock Text="{Binding BridgesStatus}" Foreground="{StaticResource Muted}"
+                                   TextWrapping="Wrap" Margin="0,8,0,0" LineHeight="17" />
+
+                        <TextBlock Text="Журнал (для диагностики):" Style="{StaticResource SubHead}" Margin="0,16,0,6" />
+                        <Border Background="#141416" CornerRadius="8" BorderBrush="{StaticResource CardBorder}" BorderThickness="1">
+                            <ListBox x:Name="LogList" ItemsSource="{Binding LogLines}"
+                                     VirtualizingStackPanel.IsVirtualizing="False"
+                                     Height="160" Background="Transparent" BorderThickness="0"
+                                     Foreground="{StaticResource Muted}" FontFamily="Consolas" FontSize="11"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="2,0" />
+                                        <Setter Property="Background" Value="Transparent" />
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Expander>
+
+            <!-- Footer -->
+            <Grid Margin="0,18,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" VerticalAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{StaticResource Muted}" FontSize="11"
+                           Text="Tor-proxy · by bylka · работает локально, без прав администратора. Основано на Tor и Snowflake." />
+                <Button Grid.Column="1" Content="Выход" Click="OnExit" Style="{StaticResource SecondaryButton}"
+                        VerticalAlignment="Center" ToolTip="Остановить прокси и закрыть программу." />
+            </Grid>
+
+        </StackPanel>
+    </ScrollViewer>
+</Window>

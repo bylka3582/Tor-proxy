@@ -1,0 +1,2 @@
+﻿# SHA-256 pins for Tor binaries. Generated inline (fetch-tor.ps1 had an encoding bug).
+EC7708E0B43E0E00B1533D11ED3CA244E6F11CB2A7B62D319AD73A7B13123033  tor.exe
